@@ -2,6 +2,7 @@ import {EventEmitter} from 'events'
 
 export class TaskQueue extends EventEmitter {
     constructor(concurrency) {
+        super()
         this.concurrency = concurrency
         this.running = 0
         this.queue= []
@@ -19,7 +20,7 @@ export class TaskQueue extends EventEmitter {
             return this.emit('empty')
         }
         while(this.running < this.concurrency && this.queue.length){
-            task = this.queue.shift()
+            const task = this.queue.shift()
             task((err) => {
                 if (err) {
                     this.emit('error', err)

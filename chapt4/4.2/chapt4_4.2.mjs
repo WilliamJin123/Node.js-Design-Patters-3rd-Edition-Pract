@@ -1,37 +1,48 @@
 import fs from 'fs';
 import { TaskQueue } from '../../taskqueue.mjs';
-export function listNestedFiles(dir, cb, concurrency = 3){
+import path from 'path';
+export function listNestedFiles(dir, cb, concurrency) {
     const queue = new TaskQueue(concurrency)
     const files = []
-    function findFiles(nesting, directory){
-        fs.readdir(directory, (err, files) => {
-            if(err){
-                return cb(err)
-            }
-            files.forEach(file => {
-                const fullPath = path.join(dir, file)
-                queue.pushTask((done) => {
-                    fs.stat(fullPath, (err, stats) => {
-                    if(err){
-                       return done(err) 
-                    }
-                    if(stats.isDirectory){
-                        findFiles(nesting + 1, fullPath)
-                    }else if (stats.isFile){
-                        files.push({path: fullPath, nesting: nesting})
-                    }
+    function findFiles(nesting, directory) {
+        queue.pushTask(done => {
+            fs.readdir(directory, (err, files) => {
+                if (err) {
+                    return done(err)
+                }
+
+                let pending = files.length
+
+                if (pending === 0) {
                     done()
+                    return
+                }
+                files.forEach(file => {
+                    const fullPath = path.join(directory, file)
+                    fs.stat(fullPath, (err, stats) => {
+                        if (err) {
+                            return done(err)
+                        }
+                        if (stats.isDirectory()) {
+                            findFiles(nesting + 1, fullPath)
+                        } else if (stats.isFile()) {
+                            
+                            files.push({ 
+                                path: fullPath, 
+                                depth: nesting 
+                            })
+                        }
+                        if(--pending === 0) {done()}
+                    })
+    
                 })
-                
-
-                })
-
             })
         })
+        
     }
 
-    findFiles(dir)
+    findFiles(0, dir)
 
-    queue.on('empty', () => cb(null, files))
-    queue.on('error', cb(err))
+    queue.on('empty', () => {cb(null, files)})
+    queue.on('error', (err) => cb(err))
 }
