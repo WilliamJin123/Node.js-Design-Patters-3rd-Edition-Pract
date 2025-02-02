@@ -3,7 +3,7 @@ import { TaskQueue } from '../../taskqueue.mjs';
 import path from 'path';
 export function listNestedFiles(dir, cb, concurrency) {
     const queue = new TaskQueue(concurrency)
-    const files = []
+    const listFiles = []
     function findFiles(nesting, directory) {
         queue.pushTask(done => {
             fs.readdir(directory, (err, files) => {
@@ -27,7 +27,7 @@ export function listNestedFiles(dir, cb, concurrency) {
                             findFiles(nesting + 1, fullPath)
                         } else if (stats.isFile()) {
                             
-                            files.push({ 
+                            listFiles.push({ 
                                 path: fullPath, 
                                 depth: nesting 
                             })
@@ -43,6 +43,6 @@ export function listNestedFiles(dir, cb, concurrency) {
 
     findFiles(0, dir)
 
-    queue.on('empty', () => {cb(null, files)})
+    queue.on('empty', () => {cb(null, listFiles)})
     queue.on('error', (err) => cb(err))
 }
