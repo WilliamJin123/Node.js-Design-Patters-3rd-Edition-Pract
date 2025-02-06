@@ -1,24 +1,23 @@
-export class TaskQueuePC{
-    constructor (concurrency) {
+export class TaskQueuePCPromise {
+    constructor(concurrency) {
         this.taskQueue = []
         this.consumerQueue = []
-        for (let i = 0; i < concurrency; i++){
+        for (let i = 0; i < concurrency; i++) {
             this.consumer()
         }
     }
-    async consumer() {
-        while(true){
-            try{
-                const task = await this.getNextTask()
-                await task()
-            }catch(err){
+    consumer() {
+        this.getNextTask()
+            .then(task => {
+                task()
+            }).catch(err => {
                 console.log(err)
-            }
-        }
+            }).finally(() => this.consumer())
+
     }
-    async getNextTask() {
+    getNextTask() {
         return new Promise((resolve) => {
-            if(this.taskQueue.length !== 0){
+            if (this.taskQueue.length !== 0) {
                 return resolve(this.taskQueue.shift())
             }
             this.consumerQueue.push(resolve)
@@ -26,7 +25,7 @@ export class TaskQueuePC{
 
     }
 
-    async runTask(task){
+    runTask(task) {
         return new Promise((resolve, reject) => {
             const taskWrapper = () => {
                 const taskPromise = task()
@@ -34,10 +33,10 @@ export class TaskQueuePC{
                 return taskPromise
             }
 
-            if(this.consumerQueue.length !== 0){
+            if (this.consumerQueue.length !== 0) {
                 const consumer = this.consumerQueue.shift()
                 consumer(taskWrapper)
-            }else{
+            } else {
                 this.taskQueue.push(taskWrapper)
             }
         })
