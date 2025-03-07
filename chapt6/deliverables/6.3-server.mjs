@@ -22,7 +22,6 @@ function demultiplexChannel(src) {
 
     src.on('readable', () => {
         let chunk
-
         if (currentFileLength === null) {
             chunk = src.read(4)
             currentFileLength = chunk && chunk.readUInt32(0)
